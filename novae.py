@@ -5,20 +5,11 @@ Fornisce i tipi `NovaeID` e `NovaeInt` per eliminare
 l'ambiguità dello zero e operare nativamente in Novae.
 """
 
-# --- Tipo NovaeID: per eliminare il Null Pointer ---
-
 class NullPointerError(Exception):
-    """Eccezione sollevata quando si tenta di dereferenziare un NovaeID vuoto."""
     pass
 
 class NovaeID:
-    """
-    Un identificatore che distingue il vuoto (∅) dall'unità (0).
-    Esempio:
-        id_valido = NovaeID(0)
-        id_vuoto = NovaeID.VUOTO
-    """
-    VUOTO = None  # Sarà inizializzato dopo la definizione
+    VUOTO = None
 
     def __init__(self, value: int):
         if value < 0:
@@ -45,51 +36,38 @@ class NovaeID:
         return hash(self._value) if not self.is_vuoto() else 0
 
     def __repr__(self):
-        if self.is_vuoto():
-            return "∅"
+        if self.is_vuoto(): return "∅"
         return f"NovaeID({self._value})"
 
     def __str__(self):
         return str(self._value) if not self.is_vuoto() else "∅"
 
     def __bool__(self):
-        # Un NovaeID valido è sempre True (anche 0!)
         return not self.is_vuoto()
 
 class _VuotoNovaeID(NovaeID):
-    def __init__(self):
-        pass
-    def is_vuoto(self):
-        return True
-    def __repr__(self):
-        return "∅"
-    def __str__(self):
-        return "∅"
-    def __bool__(self):
-        return False
+    def __init__(self): pass
+    def is_vuoto(self): return True
+    def __repr__(self): return "∅"
+    def __str__(self): return "∅"
+    def __bool__(self): return False
 
 NovaeID.VUOTO = _VuotoNovaeID()
 
-# --- Funzioni helper per la successione Novae ---
-
 def _successor(sym: str) -> str:
-    if sym == '9':
-        return '00'
+    if sym == '9': return '00'
     last = sym[-1]
     if last != '9':
         return sym[:-1] + str(int(last) + 1)
     else:
         prefix = sym[:-1]
-        if prefix == '':
-            return '00'
+        if prefix == '': return '00'
         return _successor(prefix) + '0'
-
-# --- Tipo NovaeInt: aritmetica nativa Novae ---
 
 class NovaeInt:
     def __init__(self, symbol: str):
         if not symbol or not all(c in '0123456789' for c in symbol):
-            raise ValueError("Simbolo Novae non valido. Usa cifre 0-9.")
+            raise ValueError("Simbolo Novae non valido.")
         self.symbol = symbol
 
     def __add__(self, other: 'NovaeInt') -> 'NovaeInt':
@@ -118,12 +96,30 @@ class NovaeInt:
     def __truediv__(self, other: 'NovaeInt') -> 'NovaeInt':
         if other.symbol == '0':
             return NovaeInt(self.symbol)
+        return self.divide_frazionaria(other)  # Ora restituisce una stringa, non un NovaeInt
+
+    def divide_frazionaria(self, other: 'NovaeInt', max_cifre=10) -> str:
+        """Restituisce la divisione frazionaria Novae come stringa (es. '0.222...')."""
+        if other.symbol == '0':
+            return self.symbol
         val_a = self.to_int()
         val_b = other.to_int()
-        if (val_a + 1) % (val_b + 1) != 0:
-            raise ValueError("Divisione non esatta.")
-        div_val = (val_a + 1) // (val_b + 1) - 1
-        return NovaeInt.from_int(div_val)
+        q_val = (val_a + 1) // (val_b + 1) - 1
+        r_val = (val_a + 1) % (val_b + 1)
+        if r_val == 0:
+            return NovaeInt.from_int(q_val).symbol
+        parte_intera = NovaeInt.from_int(q_val).symbol if q_val >= 0 else ''
+        if parte_intera == '':
+            parte_intera = '∅'
+        parte_frazionaria = ''
+        for _ in range(max_cifre):
+            if r_val == 0:
+                break
+            r_val *= 10
+            cifra_val = r_val // (val_b + 1)
+            r_val = r_val % (val_b + 1)
+            parte_frazionaria += str(cifra_val - 1)
+        return parte_intera + '.' + parte_frazionaria
 
     def to_int(self) -> int:
         val = 0
