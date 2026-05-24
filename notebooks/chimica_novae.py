@@ -1,5 +1,5 @@
 """
-Registro chimico formale Novae.
+Registro chimico formale Novae con tabella comparativa.
 Dimostra il Capitolo 3 del Principia Novae Mathematicae v1.3.
 """
 
@@ -10,7 +10,6 @@ urllib.request.urlretrieve(url, "novae.py")
 from novae import NovaeInt
 
 def somma_novae(*numeri):
-    """Somma una lista di stringhe Novae."""
     if not numeri:
         return '0'
     risultato = NovaeInt(numeri[0])
@@ -18,23 +17,54 @@ def somma_novae(*numeri):
         risultato = risultato + NovaeInt(n)
     return risultato.symbol
 
-# --- Idrogeno H⁰ ---
-print("=== IDROGENO H⁰ (protio, massa 1) ===")
-quark_h = '2'        # 3 quark in Novae = 2
-gluoni_h = '0'       # 1 gluone in Novae = 0
-nucleo_h = somma_novae(quark_h, gluoni_h)
-elettroni_h = '0'    # 1 elettrone in Novae = 0
-totale_h = somma_novae(nucleo_h, elettroni_h)
-print(f"Nucleo: {quark_h} quark + {gluoni_h} gluoni = {nucleo_h}")
-print(f"Elettroni: 1(+0) = {elettroni_h}")
-print(f"Totale particelle: {totale_h} (atteso: 4)")
+# --- Idrogeno ---
+quark_h = '2'; gluoni_h = '0'; nucleo_h = somma_novae(quark_h, gluoni_h)
+elettroni_h = '0'; totale_h = somma_novae(nucleo_h, elettroni_h)
 
-# --- Ossigeno O⁰⁵ ---
-print("\n=== OSSIGENO O⁰⁵ (massa 16) ===")
-quark_o = '37'       # 48 quark in Novae = 37
-gluoni_o = '05'      # 16 gluoni in Novae = 05
-nucleo_o = somma_novae(quark_o, gluoni_o)
-# Shell elettroniche: 1s² 2s² 2p⁴
+# --- Ossigeno ---
+quark_o = '37'; gluoni_o = '05'; nucleo_o = somma_novae(quark_o, gluoni_o)
+shell_0 = '1'; shell_1 = '1'; shell_2 = '3'
+totale_e = somma_novae(shell_0, shell_1, shell_2)
+totale_o = somma_novae(nucleo_o, totale_e)
+
+# --- Acqua ---
+due_idrogeni = somma_novae(totale_h, totale_h)
+totale_acqua = somma_novae(due_idrogeni, totale_o)
+
+# --- Tabella comparativa ---
+print("=" * 70)
+print("REGISTRO CHIMICO NOVAE – CONFRONTO CON DECIMALE")
+print("=" * 70)
+print(f"{'Elemento':<12} {'Particella':<20} {'Decimale':<10} {'Novae':<10}")
+print("-" * 70)
+
+# Idrogeno
+print(f"{'Idrogeno H⁰':<12} {'Quark':<20} {3:<10} {quark_h:<10}")
+print(f"{'':<12} {'Gluoni':<20} {1:<10} {gluoni_h:<10}")
+print(f"{'':<12} {'Nucleo (totale)':<20} {4:<10} {nucleo_h:<10}")
+print(f"{'':<12} {'Elettroni':<20} {1:<10} {elettroni_h:<10}")
+print(f"{'':<12} {'TOTALE':<20} {5:<10} {totale_h:<10}")
+print("-" * 70)
+
+# Ossigeno
+print(f"{'Ossigeno O⁰⁵':<12} {'Quark':<20} {48:<10} {quark_o:<10}")
+print(f"{'':<12} {'Gluoni':<20} {16:<10} {gluoni_o:<10}")
+print(f"{'':<12} {'Nucleo (totale)':<20} {64:<10} {nucleo_o:<10}")
+print(f"{'':<12} {'Elettroni (1s²)':<20} {2:<10} {shell_0:<10}")
+print(f"{'':<12} {'Elettroni (2s²)':<20} {2:<10} {shell_1:<10}")
+print(f"{'':<12} {'Elettroni (2p⁴)':<20} {4:<10} {shell_2:<10}")
+print(f"{'':<12} {'Elettroni (totale)':<20} {8:<10} {totale_e:<10}")
+print(f"{'':<12} {'TOTALE':<20} {72:<10} {totale_o:<10}")
+print("-" * 70)
+
+# Acqua
+print(f"{'Acqua H₂O':<12} {'2 Idrogeni (4+4)':<20} {10:<10} {due_idrogeni:<10}")
+print(f"{'':<12} {'1 Ossigeno':<20} {72:<10} {totale_o:<10}")
+print(f"{'':<12} {'TOTALE MOLECOLA':<20} {82:<10} {totale_acqua:<10}")
+print("=" * 70)
+print("Nota: nella colonna 'Novae' ogni simbolo rappresenta la quantità.")
+print("Es. '0' = 1, '1' = 2, '9' = 10, '00' = 11.")
+print("La somma di simboli Novae segue le regole del sistema: 0+0=1, 0+1=2, ecc.")# Shell elettroniche: 1s² 2s² 2p⁴
 shell_0 = '1'        # 2 elettroni = 1 Novae
 shell_1 = '1'        # 2 elettroni = 1 Novae
 shell_2 = '3'        # 4 elettroni = 3 Novae
