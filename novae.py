@@ -121,23 +121,34 @@ class NovaeInt:
             parte_frazionaria += str(cifra_val - 1)
         return parte_intera + '.' + parte_frazionaria
 
-    def to_int(self) -> int:
-        val = 0
-        for c in self.symbol:
-            val = val * 10 + (int(c) + 1)
-        return val - 1
+    def to_int(self):
+    """
+    Restituisce il valore decimale del simbolo Novae.
+    Esempi: '0' -> 1, '5' -> 6, '9' -> 10, '00' -> 11.
+    """
+    val = 0
+    for c in self.symbol:
+        val = val * 10 + (int(c) + 1)
+    return val
 
-    @staticmethod
-    def from_int(n: int) -> 'NovaeInt':
+@staticmethod
+def from_int(n):
+    """
+    Converte un intero decimale (quantità) in simbolo Novae.
+    Esempi: 1 -> '0', 2 -> '1', 10 -> '9', 11 -> '00'.
+    """
+    if n <= 0:
+        raise ValueError("Intero deve essere >= 1")
+    n -= 1  # shift perche' 0 Novae = 1 decimale
+    if n == 0:
+        return NovaeInt('0')
+    digits = []
+    while n >= 0:
+        digits.append(str(n % 10))
+        n = n // 10 - 1
         if n < 0:
-            raise ValueError("Intero negativo non supportato.")
-        n += 1
-        digits = []
-        while n > 0:
-            n -= 1
-            digits.append(str(n % 10))
-            n //= 10
-        return NovaeInt(''.join(reversed(digits)) if digits else '0')
+            break
+    return NovaeInt(''.join(reversed(digits)))
 
     def __repr__(self):
         return f"NovaeInt('{self.symbol}')"
