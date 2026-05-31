@@ -1,4 +1,4 @@
-l# Principia Novae Mathematicae
+# Principia Novae Mathematicae
 
 **Un nuovo linguaggio matematico fondato sulla pura successione e sulla geometria icosaedrica.**
 
