@@ -1,42 +1,52 @@
-# Novae: Il Sistema di Numerazione Non-Decimato
+l# Principia Novae Mathematicae
 
-**Novae** è un sistema di numerazione posizionale che elimina la "decimazione" del sistema decimale classico. Invece di avere un simbolo (0) che rappresenta sia l'assenza di quantità che una posizione numerica, Novae distingue il **Vuoto** (`∅`) dall'**Unità** (`0`).
+**Un nuovo linguaggio matematico fondato sulla pura successione e sulla geometria icosaedrica.**
 
-## Perché Novae?
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20338369.svg)](https://doi.org/10.5281/zenodo.20338369)
 
-Il sistema decimale e binario che usiamo oggi sono versioni "decimate" di un sistema più naturale, il Novae. La decimazione (dal latino *decimatio*, l'uccisione di un soldato ogni dieci) è l'atto di sacrificare un'unità ad ogni ciclo per generare un riporto. Novae elimina questo sacrificio, conservando ogni posizione sempre piena.
+---
 
-## Binario Novae: Vantaggi Immediati
+## Cos'è il Novae?
 
-Il **Binario Novae** è la trasposizione di questo principio nel sistema a due cifre (0, 1). I vantaggi sono misurabili:
+Il sistema decimale che usiamo ogni giorno non è l'unico modo di contare. Il Novae è un sistema di numerazione che elimina alla radice i concetti di zero assoluto e infinito, sostituendoli con la pura successione.
 
-### 1. Maggiore Densità di Informazione
+Nel Novae:
+- Il vuoto è `∅`, non `0`
+- `0` rappresenta l'unità, non il nulla
+- L'addizione è successione pura: `0 + 0 = 1`
+- Non esistono zeri posizionali, né infiniti, né singolarità
 
-| Lunghezza max bit | Binario Classico (valori) | Binario Novae (valori) |
-| :--- | :--- | :--- |
-| 1 bit | 2 | 2 |
-| 2 bit | 4 | 6 |
-| 3 bit | 8 | 14 |
-| n bit | 2ⁿ | 2ⁿ⁺¹ - 2 |
+## Ipotesi fondante
 
-Con stringhe fino a 3 bit, il Novae rappresenta il **75% in più** di valori.
+Il continuo emerge dal discreto. Lo spazio è un reticolo tridimensionale che può essere mappato con un artificio logico: le Sfere di Planck, la cui aggregazione segue il kissing number icosaedrico (12). Le fluttuazioni del vuoto (`∅`) rappresentano la granularità ultima della realtà. Il tempo non è una dimensione aggiuntiva, ma un fenomeno che emerge dallo spazio: la luce percorre una Sfera di Planck per ogni istante, e la successione di questi istanti (`0 + 0 = 1`) genera il fluire del tempo.
 
-### 2. Eliminazione del Null Pointer
+In questo quadro, le singolarità e le divergenze che affliggono la fisica teorica (rinormalizzazione, costante cosmologica) non sono problemi della natura, ma artefatti del linguaggio decimale.
 
-Nel binario classico, `0` è ambiguo: è sia il primo indirizzo valido, sia il puntatore nullo.
-Nel Binario Novae:
-- `∅` (nessun segnale) = puntatore non inizializzato.
-- `0` = primo indirizzo valido.
+---
 
-**Fine dei NullPointerException a livello hardware.**
+## Risultati sperimentali
 
-### 3. Addizione come Successione Pura
+| Ambito | Risultato | Notebook |
+|--------|-----------|----------|
+| **Reti neurali** | Wide & Deep Novae (98.0%) supera il classico (97.4%) su MNIST | [`reti_neurali_widedeep.py`](notebooks/reti_neurali_widedeep.py) |
+| **Stabilità computazionale** | Iterazione logistica: 101 passi stabili vs 12 del classico | [`stabilita_logistica.py`](notebooks/stabilita_logistica.py) |
+| **Informatica** | Eliminazione del null pointer: 0% errori vs 10% del classico | [`null_pointer_test.py`](notebooks/null_pointer_test.py) |
+| **Hardware** | ALU Novae in C funzionante, benchmark di mappature binarie | [`alu_compilazione_test.py`](notebooks/alu_compilazione_test.py) |
+| **Chimica** | Registro formale per atomi e molecole | [`chimica_novae.py`](notebooks/chimica_novae.py) |
 
-L'addizione Novae è semplicemente l'applicazione ripetuta della funzione **successore**. Non servono complessi circuiti aritmetici, ma solo contatori e comparatori.
+---
 
-## Esecuzione Rapida
+## Documentazione
+
+- 📄 [Principia Novae Mathematicae v1.3 (PDF)](https://zenodo.org/records/20338369)
+- 📓 [Notebook Colab](notebooks/)
+- 📚 [Libreria Python `novae.py`](novae.py)
+
+---
+
+## Installazione rapida
 
 ```bash
-git clone https://github.com/oppomariolevi-ai/Novae.git
-cd Novae
-python3 binario_novae.py
+git clone https://github.com/oppomariolevi-ai/novaebin.git
+cd novaebin
+python3 novae.py
