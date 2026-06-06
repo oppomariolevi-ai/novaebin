@@ -251,41 +251,50 @@ class NovaeFloat:
             val += (int(c) + 1) * (10 ** (-j - 1))
         return val
 
+    @staticmethod
+    def da_decimale(valore, max_cifre=10):
+        """Converte un float decimale in NovaeFloat."""
+        if valore < 0:
+            raise ValueError("Valori negativi non ancora supportati")
+        parte_intera = int(valore)
+        if parte_intera == 0:
+            intero_str = '∅'
+        else:
+            intero_str = NovaeInt.from_int(parte_intera).symbol
+        resto = valore - parte_intera
+        fraz_str = ''
+        for _ in range(max_cifre):
+            if resto == 0.0:
+                break
+            resto *= 10
+            cifra = int(resto)
+            cifra_novae = cifra - 1
+            if cifra_novae < 0:
+                cifra_novae = 0
+            fraz_str += str(cifra_novae)
+            resto -= cifra
+        return NovaeFloat(intero_str, fraz_str)
+
     def __add__(self, other):
-        # Usa l'addizione nativa Novae (ALU C o tabella)
+        """Addizione nativa Novae (ALU C o tabella)."""
         max_len = max(len(self.fraz), len(other.fraz))
         s_fraz = self.fraz.ljust(max_len, '0')
         o_fraz = other.fraz.ljust(max_len, '0')
 
-        riporto = -1  # -1 significa "nessun riporto"
+        riporto = -1
         risultato_fraz = ''
         for i in range(max_len - 1, -1, -1):
-            a = int(s_fraz[i])
-            b = int(o_fraz[i])
-            somma = _add_novae(a, b)
-            if riporto != -1:
-                somma = _add_novae(somma, riporto)
-
-            if somma >= 10:  # Ha generato un riporto (es. 0+9=9? No, 0+9=9 non genera riporto. 0+9=9, ma 9 non è >=10. In Novae, il riporto si ha quando la somma è '00' cioè due cifre. La tabella dà '00' per 9+0=00, che è 0 con riporto. Ma la nostra tabella mappa 9+0 a 0, che non è >=10. Quindi dobbiamo gestire il riporto in base al fatto che la somma di due cifre possa essere a due cifre.)
-                # In realtà, la tabella _add_novae_py restituisce sempre una cifra 0-9. Per gestire il riporto, dobbiamo considerare il caso in cui la somma è '0' e l'addizione ha generato un riporto implicito.
-                # Es: 9 + 0 = 9? No, 9+0=00 (cioè 0 con riporto 0). La tabella dà 0 per 9+0, ma dovrebbe anche segnalare il riporto.
-                # Dobbiamo modificare la tabella per restituire una tupla (cifra, riporto).
-                pass
-
-            # Per ora, usiamo un approccio semplificato: se la somma delle cifre decimali supera 9, c'è riporto.
-            # Convertiamo le cifre Novae in valori decimali per il controllo.
             val_a = int(s_fraz[i]) + 1
             val_b = int(o_fraz[i]) + 1
             val_sum = val_a + val_b + (1 if riporto != -1 else 0)
             if val_sum > 10:
                 val_sum -= 10
-                riporto = 0  # 1 unità di riporto
+                riporto = 0
             else:
                 riporto = -1
             cifra_novae = val_sum - 1
             risultato_fraz = str(cifra_novae) + risultato_fraz
 
-        # Parte intera
         def intero_to_val(s):
             if s == '∅': return 0
             val = 0
@@ -297,10 +306,16 @@ class NovaeFloat:
         val_int_other = intero_to_val(other.intero)
         val_int_sum = val_int_self + val_int_other + (1 if riporto != -1 else 0)
 
-        # Converti val_int_sum in stringa Novae
         if val_int_sum == 0:
             intero_str = '∅'
         else:
             intero_str = NovaeInt.from_int(val_int_sum).symbol
 
         return NovaeFloat(intero_str, risultato_fraz)
+
+    def __mul__(self, other):
+        """Moltiplicazione Novae frazionaria."""
+        val_self = self.to_dec()
+        val_other = other.to_dec()
+        val_prod = val_self * val_other
+        return NovaeFloat.da_decimale(val_prod)
