@@ -225,11 +225,19 @@ class NovaeFloat:
     """
     Numero frazionario Novae.
     Esempi: ∅.4 (0.5 decimale), 0.8 (1.9 decimale), 9.9 (11 decimale).
+    Lo zero assoluto è rappresentato da intero='∅' e fraz=''.
     """
     def __init__(self, intero='∅', fraz=''):
         if intero == '': intero = '∅'
         self.intero = intero
         self.fraz = fraz
+
+    @staticmethod
+    def zero():
+        return NovaeFloat('∅', '')
+
+    def is_zero(self):
+        return self.intero == '∅' and self.fraz == ''
 
     def __repr__(self): return f"NovaeFloat('{self.intero}.{self.fraz}')"
     def __str__(self):
@@ -238,6 +246,8 @@ class NovaeFloat:
         return f"{self.intero}.{self.fraz}"
 
     def to_dec(self):
+        if self.is_zero():
+            return 0.0
         val = 0.0
         if self.intero != '∅':
             for i, c in enumerate(reversed(self.intero)):
@@ -250,6 +260,8 @@ class NovaeFloat:
     def da_decimale(valore, max_cifre=10):
         if valore < 0:
             raise ValueError("Valori negativi non ancora supportati")
+        if abs(valore) < 1e-12:
+            return NovaeFloat.zero()
         parte_intera = int(valore)
         if parte_intera == 0:
             intero_str = '∅'
@@ -270,6 +282,8 @@ class NovaeFloat:
         return NovaeFloat(intero_str, fraz_str)
 
     def __add__(self, other):
+        if self.is_zero(): return other
+        if other.is_zero(): return self
         max_len = max(len(self.fraz), len(other.fraz))
         s_fraz = self.fraz.ljust(max_len, '0') if self.fraz else '0' * max_len
         o_fraz = other.fraz.ljust(max_len, '0') if other.fraz else '0' * max_len
@@ -307,9 +321,13 @@ class NovaeFloat:
         return NovaeFloat(intero_str, risultato_fraz)
 
     def __mul__(self, other):
+        if self.is_zero() or other.is_zero():
+            return NovaeFloat.zero()
         val_self = self.to_dec()
         val_other = other.to_dec()
         val_prod = val_self * val_other
+        if abs(val_prod) < 1e-12:
+            return NovaeFloat.zero()
         if abs(val_prod - round(val_prod)) < 1e-12:
             return NovaeFloat(NovaeInt.from_int(int(round(val_prod))).symbol, '')
         return NovaeFloat.da_decimale(val_prod)
