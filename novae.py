@@ -333,7 +333,7 @@ class NovaeFloat:
         return NovaeFloat.da_decimale(val_prod)
 
     def __truediv__(self, other, max_cifre=10):
-    """Divisione frazionaria Novae. Restituisce un NovaeFloat."""
+        """Divisione frazionaria Novae. Restituisce un NovaeFloat."""
         if other.is_zero():
             raise ZeroDivisionError("Divisione per zero Novae (∅)")
         if self.is_zero():
