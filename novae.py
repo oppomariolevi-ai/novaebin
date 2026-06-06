@@ -331,3 +331,18 @@ class NovaeFloat:
         if abs(val_prod - round(val_prod)) < 1e-12:
             return NovaeFloat(NovaeInt.from_int(int(round(val_prod))).symbol, '')
         return NovaeFloat.da_decimale(val_prod)
+
+    def __truediv__(self, other, max_cifre=10):
+    """Divisione frazionaria Novae. Restituisce un NovaeFloat."""
+        if other.is_zero():
+            raise ZeroDivisionError("Divisione per zero Novae (∅)")
+        if self.is_zero():
+            return NovaeFloat.zero()
+    
+        val_self = self.to_dec()
+        val_other = other.to_dec()
+        val_div = val_self / val_other
+    
+        if abs(val_div - round(val_div)) < 1e-12:
+            return NovaeFloat(NovaeInt.from_int(int(round(val_div))).symbol, '')
+        return NovaeFloat.da_decimale(val_div, max_cifre)
