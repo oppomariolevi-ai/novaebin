@@ -3,6 +3,7 @@ Libreria Novae - Sistema di Numerazione Non-Decimato
 ----------------------------------------------------
 Fornisce i tipi `NovaeID`, `NovaeInt` e `NovaeFloat` per eliminare
 l'ambiguità dello zero e operare nativamente in Novae.
+Supporta negativi basati sulla stringa speculare -9..∅..+9.
 """
 
 import os
@@ -223,27 +224,33 @@ class NovaeInt:
 
 class NovaeFloat:
     """
-    Numero frazionario Novae.
-    Esempi: ∅.4 (0.5 decimale), 0.8 (1.9 decimale), 9.9 (11 decimale).
-    Lo zero assoluto è rappresentato da intero='∅' e fraz=''.
+    Numero frazionario Novae con supporto nativo ai negativi.
+    Basato sulla stringa speculare: -9..∅..+9.
     """
-    def __init__(self, intero='∅', fraz=''):
+    def __init__(self, intero='∅', fraz='', segno='+'):
         if intero == '': intero = '∅'
         self.intero = intero
         self.fraz = fraz
+        self.segno = segno  # '+' o '-'
 
     @staticmethod
     def zero():
-        return NovaeFloat('∅', '')
+        return NovaeFloat('∅', '', '+')
 
     def is_zero(self):
         return self.intero == '∅' and self.fraz == ''
 
-    def __repr__(self): return f"NovaeFloat('{self.intero}.{self.fraz}')"
+    def __repr__(self):
+        segno_str = '-' if self.segno == '-' else ''
+        return f"NovaeFloat('{segno_str}{self.intero}.{self.fraz}')"
+
     def __str__(self):
+        if self.is_zero():
+            return '∅'
+        segno_str = '-' if self.segno == '-' else ''
         if self.fraz == '':
-            return self.intero
-        return f"{self.intero}.{self.fraz}"
+            return f"{segno_str}{self.intero}"
+        return f"{segno_str}{self.intero}.{self.fraz}"
 
     def to_dec(self):
         if self.is_zero():
@@ -254,14 +261,14 @@ class NovaeFloat:
                 val += (int(c) + 1) * (10 ** i)
         for j, c in enumerate(self.fraz):
             val += (int(c) + 1) * (10 ** (-j - 1))
-        return val
+        return -val if self.segno == '-' else val
 
     @staticmethod
     def da_decimale(valore, max_cifre=10):
-        if valore < 0:
-            raise ValueError("Valori negativi non ancora supportati")
         if abs(valore) < 1e-12:
             return NovaeFloat.zero()
+        segno = '-' if valore < 0 else '+'
+        valore = abs(valore)
         parte_intera = int(valore)
         if parte_intera == 0:
             intero_str = '∅'
@@ -279,70 +286,108 @@ class NovaeFloat:
                 cifra_novae = 0
             fraz_str += str(cifra_novae)
             resto -= cifra
-        return NovaeFloat(intero_str, fraz_str)
+        return NovaeFloat(intero_str, fraz_str, segno)
+
+    def _valore_assoluto_dec(self):
+        """Restituisce il valore assoluto decimale (senza segno)."""
+        val = 0.0
+        if self.intero != '∅':
+            for i, c in enumerate(reversed(self.intero)):
+                val += (int(c) + 1) * (10 ** i)
+        for j, c in enumerate(self.fraz):
+            val += (int(c) + 1) * (10 ** (-j - 1))
+        return val
 
     def __add__(self, other):
+        # Caso 1: uno dei due è zero
         if self.is_zero(): return other
         if other.is_zero(): return self
-        max_len = max(len(self.fraz), len(other.fraz))
-        s_fraz = self.fraz.ljust(max_len, '0') if self.fraz else '0' * max_len
-        o_fraz = other.fraz.ljust(max_len, '0') if other.fraz else '0' * max_len
 
-        riporto = -1
-        risultato_fraz = ''
-        for i in range(max_len - 1, -1, -1):
-            val_a = int(s_fraz[i]) + 1
-            val_b = int(o_fraz[i]) + 1
-            val_sum = val_a + val_b + (1 if riporto != -1 else 0)
-            if val_sum > 10:
-                val_sum -= 10
-                riporto = 0
+        # Caso 2: segni concordi
+        if self.segno == other.segno:
+            # Somma dei valori assoluti
+            max_len = max(len(self.fraz), len(other.fraz))
+            s_fraz = self.fraz.ljust(max_len, '0') if self.fraz else '0' * max_len
+            o_fraz = other.fraz.ljust(max_len, '0') if other.fraz else '0' * max_len
+
+            riporto = -1
+            risultato_fraz = ''
+            for i in range(max_len - 1, -1, -1):
+                val_a = int(s_fraz[i]) + 1
+                val_b = int(o_fraz[i]) + 1
+                val_sum = val_a + val_b + (1 if riporto != -1 else 0)
+                if val_sum > 10:
+                    val_sum -= 10
+                    riporto = 0
+                else:
+                    riporto = -1
+                cifra_novae = val_sum - 1
+                risultato_fraz = str(cifra_novae) + risultato_fraz
+
+            def intero_to_val(s):
+                if s == '∅': return 0
+                val = 0
+                for c in s:
+                    val = val * 10 + (int(c) + 1)
+                return val
+
+            val_int_self = intero_to_val(self.intero)
+            val_int_other = intero_to_val(other.intero)
+            val_int_sum = val_int_self + val_int_other + (1 if riporto != -1 else 0)
+
+            if val_int_sum == 0:
+                intero_str = '∅'
             else:
-                riporto = -1
-            cifra_novae = val_sum - 1
-            risultato_fraz = str(cifra_novae) + risultato_fraz
+                intero_str = NovaeInt.from_int(val_int_sum).symbol
 
-        def intero_to_val(s):
-            if s == '∅': return 0
-            val = 0
-            for c in s:
-                val = val * 10 + (int(c) + 1)
-            return val
+            return NovaeFloat(intero_str, risultato_fraz, self.segno)
 
-        val_int_self = intero_to_val(self.intero)
-        val_int_other = intero_to_val(other.intero)
-        val_int_sum = val_int_self + val_int_other + (1 if riporto != -1 else 0)
-
-        if val_int_sum == 0:
-            intero_str = '∅'
+        # Caso 3: segni discordi (sottrazione)
+        val_self = self._valore_assoluto_dec()
+        val_other = other._valore_assoluto_dec()
+        if val_self >= val_other:
+            risultato = NovaeFloat._sottrai_positivi(self, other)
+            risultato.segno = self.segno
+            return risultato
         else:
-            intero_str = NovaeInt.from_int(val_int_sum).symbol
+            risultato = NovaeFloat._sottrai_positivi(other, self)
+            risultato.segno = other.segno
+            return risultato
 
-        return NovaeFloat(intero_str, risultato_fraz)
+    @staticmethod
+    def _sottrai_positivi(a, b):
+        """Sottrae due NovaeFloat positivi (a >= b)."""
+        val_a = a._valore_assoluto_dec()
+        val_b = b._valore_assoluto_dec()
+        val_diff = val_a - val_b
+        return NovaeFloat.da_decimale(val_diff)
 
     def __mul__(self, other):
         if self.is_zero() or other.is_zero():
             return NovaeFloat.zero()
-        val_self = self.to_dec()
-        val_other = other.to_dec()
+        val_self = self._valore_assoluto_dec()
+        val_other = other._valore_assoluto_dec()
         val_prod = val_self * val_other
+        segno = '+' if self.segno == other.segno else '-'
         if abs(val_prod) < 1e-12:
             return NovaeFloat.zero()
         if abs(val_prod - round(val_prod)) < 1e-12:
-            return NovaeFloat(NovaeInt.from_int(int(round(val_prod))).symbol, '')
-        return NovaeFloat.da_decimale(val_prod)
+            return NovaeFloat(NovaeInt.from_int(int(round(val_prod))).symbol, '', segno)
+        risultato = NovaeFloat.da_decimale(val_prod)
+        risultato.segno = segno
+        return risultato
 
     def __truediv__(self, other, max_cifre=10):
-        """Divisione frazionaria Novae. Restituisce un NovaeFloat."""
         if other.is_zero():
             raise ZeroDivisionError("Divisione per zero Novae (∅)")
         if self.is_zero():
             return NovaeFloat.zero()
-    
-        val_self = self.to_dec()
-        val_other = other.to_dec()
+        val_self = self._valore_assoluto_dec()
+        val_other = other._valore_assoluto_dec()
         val_div = val_self / val_other
-    
+        segno = '+' if self.segno == other.segno else '-'
         if abs(val_div - round(val_div)) < 1e-12:
-            return NovaeFloat(NovaeInt.from_int(int(round(val_div))).symbol, '')
-        return NovaeFloat.da_decimale(val_div, max_cifre)
+            return NovaeFloat(NovaeInt.from_int(int(round(val_div))).symbol, '', segno)
+        risultato = NovaeFloat.da_decimale(val_div, max_cifre)
+        risultato.segno = segno
+        return risultato
