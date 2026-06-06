@@ -253,7 +253,7 @@ class NovaeFloat:
 
     @staticmethod
     def da_decimale(valore, max_cifre=10):
-        """Converte un float decimale in NovaeFloat."""
+        """Converte un float decimale in NovaeFloat, con tolleranza per arrotondamenti."""
         if valore < 0:
             raise ValueError("Valori negativi non ancora supportati")
         parte_intera = int(valore)
@@ -264,15 +264,19 @@ class NovaeFloat:
         resto = valore - parte_intera
         fraz_str = ''
         for _ in range(max_cifre):
-            if resto == 0.0:
+            if resto < 1e-12:  # tolleranza per fermare la conversione
                 break
             resto *= 10
             cifra = int(resto)
             cifra_novae = cifra - 1
             if cifra_novae < 0:
-                cifra_novae = 0
+                cifra_novae = 0  # gestione semplificata del prestito
             fraz_str += str(cifra_novae)
             resto -= cifra
+        # Rimuovi zeri finali che potrebbero essere stati generati
+        fraz_str = fraz_str.rstrip('0')
+        if fraz_str == '':
+            fraz_str = '0'
         return NovaeFloat(intero_str, fraz_str)
 
     def __add__(self, other):
@@ -314,8 +318,11 @@ class NovaeFloat:
         return NovaeFloat(intero_str, risultato_fraz)
 
     def __mul__(self, other):
-        """Moltiplicazione Novae frazionaria."""
+        """Moltiplicazione Novae frazionaria. Usa la conversione decimale con tolleranza."""
         val_self = self.to_dec()
         val_other = other.to_dec()
         val_prod = val_self * val_other
+        # Se il prodotto è un intero, restituisci direttamente un NovaeFloat con parte frazionaria '0'
+        if abs(val_prod - round(val_prod)) < 1e-12:
+            return NovaeFloat(NovaeInt.from_int(int(round(val_prod))).symbol, '0')
         return NovaeFloat.da_decimale(val_prod)
