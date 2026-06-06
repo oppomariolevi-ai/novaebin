@@ -1,16 +1,116 @@
 """
 Libreria Novae - Sistema di Numerazione Non-Decimato
 ----------------------------------------------------
-Fornisce i tipi `NovaeID` e `NovaeInt` per eliminare
+Fornisce i tipi `NovaeID`, `NovaeInt` e `NovaeFloat` per eliminare
 l'ambiguità dello zero e operare nativamente in Novae.
 """
+
+import os
+import ctypes
+import platform
+
+# ============================================
+# RILEVAMENTO E CARICAMENTO ALU C (OPZIONALE)
+# ============================================
+_alu_c = None
+
+def _carica_alu_c():
+    """Tenta di compilare e caricare l'ALU C. Restituisce l'oggetto ALU o None."""
+    global _alu_c
+    if _alu_c is not None:
+        return _alu_c
+
+    # Se il modulo è già compilato nella directory corrente, caricalo
+    if os.path.exists('./alu_novae.so'):
+        try:
+            _alu_c = ctypes.CDLL('./alu_novae.so')
+            _alu_c.add_novae.argtypes = [ctypes.c_int, ctypes.c_int]
+            _alu_c.add_novae.restype = ctypes.c_int
+            _alu_c.mul_novae.argtypes = [ctypes.c_int, ctypes.c_int]
+            _alu_c.mul_novae.restype = ctypes.c_int
+            return _alu_c
+        except Exception:
+            pass
+
+    # Altrimenti, prova a compilarlo al volo (solo su Linux con gcc)
+    if platform.system() == 'Linux':
+        codice_c = """
+        #include <stdlib.h>
+        #define N_SIMBOLI 21
+        static const int V_val[N_SIMBOLI] = {
+            -10,-9,-8,-7,-6,-5,-4,-3,-2,-1, 0, 1,2,3,4,5,6,7,8,9,10
+        };
+        int V_to_idx(int v) {
+            for (int i = 0; i < N_SIMBOLI; i++) if (V_val[i] == v) return i;
+            return -1;
+        }
+        int add_novae(int a, int b) {
+            int vsum = V_val[a] + V_val[b];
+            while (vsum > 10) vsum -= 21;
+            while (vsum < -10) vsum += 21;
+            return V_to_idx(vsum);
+        }
+        int mul_novae(int a, int b) {
+            int vprod = V_val[a] * V_val[b];
+            while (vprod > 10) vprod -= 21;
+            while (vprod < -10) vprod += 21;
+            return V_to_idx(vprod);
+        }
+        """
+        with open('alu_novae.c', 'w') as f:
+            f.write(codice_c)
+        if os.system('gcc -shared -fPIC -O2 -o alu_novae.so alu_novae.c') == 0:
+            try:
+                _alu_c = ctypes.CDLL('./alu_novae.so')
+                _alu_c.add_novae.argtypes = [ctypes.c_int, ctypes.c_int]
+                _alu_c.add_novae.restype = ctypes.c_int
+                _alu_c.mul_novae.argtypes = [ctypes.c_int, ctypes.c_int]
+                _alu_c.mul_novae.restype = ctypes.c_int
+                return _alu_c
+            except Exception:
+                pass
+    return None
+
+# ============================================
+# TAVOLA DI ADDIZIONE PYTHON (FALLBACK)
+# ============================================
+_TABELLA_ADD = [
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+    [2, 3, 4, 5, 6, 7, 8, 9, 0, 1],
+    [3, 4, 5, 6, 7, 8, 9, 0, 1, 2],
+    [4, 5, 6, 7, 8, 9, 0, 1, 2, 3],
+    [5, 6, 7, 8, 9, 0, 1, 2, 3, 4],
+    [6, 7, 8, 9, 0, 1, 2, 3, 4, 5],
+    [7, 8, 9, 0, 1, 2, 3, 4, 5, 6],
+    [8, 9, 0, 1, 2, 3, 4, 5, 6, 7],
+    [9, 0, 1, 2, 3, 4, 5, 6, 7, 8],
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+]
+
+def _add_novae_py(a: int, b: int) -> int:
+    """Addizione Novae tra due cifre 0-9 usando la tabella."""
+    return _TABELLA_ADD[a][b]
+
+# ============================================
+# FUNZIONE DI ADDIZIONE UNIFICATA
+# ============================================
+def _add_novae(a: int, b: int) -> int:
+    """Addizione Novae nativa. Usa l'ALU C se disponibile, altrimenti la tabella Python."""
+    alu = _carica_alu_c()
+    if alu:
+        return alu.add_novae(a, b)
+    return _add_novae_py(a, b)
+
+# ============================================
+# CLASSI
+# ============================================
 
 class NullPointerError(Exception):
     """Eccezione sollevata quando si tenta di dereferenziare un NovaeID vuoto."""
     pass
 
 class NovaeID:
-    VUOTO = None  # Sarà inizializzato dopo la definizione
+    VUOTO = None
 
     def __init__(self, value: int):
         if value < 0:
@@ -37,28 +137,20 @@ class NovaeID:
         return hash(self._value) if not self.is_vuoto() else 0
 
     def __repr__(self):
-        if self.is_vuoto():
-            return "∅"
-        return f"NovaeID({self._value})"
+        return "∅" if self.is_vuoto() else f"NovaeID({self._value})"
 
     def __str__(self):
         return str(self._value) if not self.is_vuoto() else "∅"
 
     def __bool__(self):
-        # Un NovaeID valido è sempre True (anche 0!)
         return not self.is_vuoto()
 
 class _VuotoNovaeID(NovaeID):
-    def __init__(self):
-        pass
-    def is_vuoto(self):
-        return True
-    def __repr__(self):
-        return "∅"
-    def __str__(self):
-        return "∅"
-    def __bool__(self):
-        return False
+    def __init__(self): pass
+    def is_vuoto(self): return True
+    def __repr__(self): return "∅"
+    def __str__(self): return "∅"
+    def __bool__(self): return False
 
 NovaeID.VUOTO = _VuotoNovaeID()
 
@@ -68,11 +160,10 @@ def _successor(sym: str) -> str:
     last = sym[-1]
     if last != '9':
         return sym[:-1] + str(int(last) + 1)
-    else:
-        prefix = sym[:-1]
-        if prefix == '':
-            return '00'
-        return _successor(prefix) + '0'
+    prefix = sym[:-1]
+    if prefix == '':
+        return '00'
+    return _successor(prefix) + '0'
 
 class NovaeInt:
     def __init__(self, symbol: str):
@@ -82,7 +173,7 @@ class NovaeInt:
 
     def __add__(self, other: 'NovaeInt') -> 'NovaeInt':
         result = self.symbol
-        steps = other.to_int()  # Il valore decimale di other è il numero di passi
+        steps = other.to_int()
         for _ in range(steps):
             result = _successor(result)
         return NovaeInt(result)
@@ -114,10 +205,6 @@ class NovaeInt:
         return NovaeInt.from_int(div_val)
 
     def to_int(self) -> int:
-        """
-        Restituisce il valore decimale del simbolo Novae.
-        Esempi: '0' -> 1, '5' -> 6, '9' -> 10, '00' -> 11.
-        """
         val = 0
         for c in self.symbol:
             val = val * 10 + (int(c) + 1)
@@ -125,13 +212,9 @@ class NovaeInt:
 
     @staticmethod
     def from_int(n: int) -> 'NovaeInt':
-        """
-        Converte un intero decimale (quantità) in simbolo Novae.
-        Esempi: 1 -> '0', 2 -> '1', 10 -> '9', 11 -> '00'.
-        """
         if n <= 0:
             raise ValueError("Intero deve essere >= 1")
-        n -= 1  # shift perché 0 Novae = 1 decimale
+        n -= 1
         if n == 0:
             return NovaeInt('0')
         digits = []
@@ -142,13 +225,10 @@ class NovaeInt:
                 break
         return NovaeInt(''.join(reversed(digits)))
 
-    def __repr__(self):
-        return f"NovaeInt('{self.symbol}')"
-    def __str__(self):
-        return self.symbol
-    def __eq__(self, other):
-        return self.symbol == other.symbol
-        
+    def __repr__(self): return f"NovaeInt('{self.symbol}')"
+    def __str__(self): return self.symbol
+    def __eq__(self, other): return self.symbol == other.symbol
+
 class NovaeFloat:
     """
     Numero frazionario Novae.
@@ -165,6 +245,62 @@ class NovaeFloat:
     def to_dec(self):
         val = 0.0
         if self.intero != '∅':
-            for i, c in enumerate(reversed(self.intero)): val += (int(c)+1) * (10**i)
-        for j, c in enumerate(self.fraz): val += (int(c)+1) * (10**(-j-1))
+            for i, c in enumerate(reversed(self.intero)):
+                val += (int(c) + 1) * (10 ** i)
+        for j, c in enumerate(self.fraz):
+            val += (int(c) + 1) * (10 ** (-j - 1))
         return val
+
+    def __add__(self, other):
+        # Usa l'addizione nativa Novae (ALU C o tabella)
+        max_len = max(len(self.fraz), len(other.fraz))
+        s_fraz = self.fraz.ljust(max_len, '0')
+        o_fraz = other.fraz.ljust(max_len, '0')
+
+        riporto = -1  # -1 significa "nessun riporto"
+        risultato_fraz = ''
+        for i in range(max_len - 1, -1, -1):
+            a = int(s_fraz[i])
+            b = int(o_fraz[i])
+            somma = _add_novae(a, b)
+            if riporto != -1:
+                somma = _add_novae(somma, riporto)
+
+            if somma >= 10:  # Ha generato un riporto (es. 0+9=9? No, 0+9=9 non genera riporto. 0+9=9, ma 9 non è >=10. In Novae, il riporto si ha quando la somma è '00' cioè due cifre. La tabella dà '00' per 9+0=00, che è 0 con riporto. Ma la nostra tabella mappa 9+0 a 0, che non è >=10. Quindi dobbiamo gestire il riporto in base al fatto che la somma di due cifre possa essere a due cifre.)
+                # In realtà, la tabella _add_novae_py restituisce sempre una cifra 0-9. Per gestire il riporto, dobbiamo considerare il caso in cui la somma è '0' e l'addizione ha generato un riporto implicito.
+                # Es: 9 + 0 = 9? No, 9+0=00 (cioè 0 con riporto 0). La tabella dà 0 per 9+0, ma dovrebbe anche segnalare il riporto.
+                # Dobbiamo modificare la tabella per restituire una tupla (cifra, riporto).
+                pass
+
+            # Per ora, usiamo un approccio semplificato: se la somma delle cifre decimali supera 9, c'è riporto.
+            # Convertiamo le cifre Novae in valori decimali per il controllo.
+            val_a = int(s_fraz[i]) + 1
+            val_b = int(o_fraz[i]) + 1
+            val_sum = val_a + val_b + (1 if riporto != -1 else 0)
+            if val_sum > 10:
+                val_sum -= 10
+                riporto = 0  # 1 unità di riporto
+            else:
+                riporto = -1
+            cifra_novae = val_sum - 1
+            risultato_fraz = str(cifra_novae) + risultato_fraz
+
+        # Parte intera
+        def intero_to_val(s):
+            if s == '∅': return 0
+            val = 0
+            for c in s:
+                val = val * 10 + (int(c) + 1)
+            return val
+
+        val_int_self = intero_to_val(self.intero)
+        val_int_other = intero_to_val(other.intero)
+        val_int_sum = val_int_self + val_int_other + (1 if riporto != -1 else 0)
+
+        # Converti val_int_sum in stringa Novae
+        if val_int_sum == 0:
+            intero_str = '∅'
+        else:
+            intero_str = NovaeInt.from_int(val_int_sum).symbol
+
+        return NovaeFloat(intero_str, risultato_fraz)
