@@ -148,3 +148,23 @@ class NovaeInt:
         return self.symbol
     def __eq__(self, other):
         return self.symbol == other.symbol
+        
+class NovaeFloat:
+    """
+    Numero frazionario Novae.
+    Esempi: ∅.4 (0.5 decimale), 0.8 (1.9 decimale), 9.9 (11 decimale).
+    """
+    def __init__(self, intero='∅', fraz='0'):
+        if intero == '': intero = '∅'
+        self.intero = intero
+        self.fraz = fraz
+
+    def __repr__(self): return f"NovaeFloat('{self.intero}.{self.fraz}')"
+    def __str__(self): return f"{self.intero}.{self.fraz}"
+
+    def to_dec(self):
+        val = 0.0
+        if self.intero != '∅':
+            for i, c in enumerate(reversed(self.intero)): val += (int(c)+1) * (10**i)
+        for j, c in enumerate(self.fraz): val += (int(c)+1) * (10**(-j-1))
+        return val
