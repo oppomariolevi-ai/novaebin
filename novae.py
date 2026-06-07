@@ -281,6 +281,9 @@ class NovaeFloat:
         else:
             parte_intera_str, parte_fraz_str = str_val, ''
         
+        # Rimuovi gli zeri finali dalla parte frazionaria per ottenere la rappresentazione compatta
+        parte_fraz_str = parte_fraz_str.rstrip('0')
+        
         # Parte intera
         parte_intera = int(parte_intera_str)
         if parte_intera == 0:
@@ -289,7 +292,7 @@ class NovaeFloat:
             intero_str = NovaeInt.from_int(parte_intera).symbol
         
         # Converti la parte frazionaria in cifre Novae con prestito
-        cifre_dec = [int(c) for c in parte_fraz_str[:max_cifre]]
+        cifre_dec = [int(c) for c in parte_fraz_str]
         cifre_novae = []
         i = len(cifre_dec) - 1
         while i >= 0:
@@ -310,7 +313,7 @@ class NovaeFloat:
             cifre_novae.insert(0, d - 1)
             i -= 1
         
-        # Rimuovi zeri finali
+        # Rimuovi eventuali zeri finali prodotti dal prestito
         while cifre_novae and cifre_novae[-1] == 0:
             cifre_novae.pop()
         
