@@ -269,32 +269,31 @@ class NovaeFloat:
             return NovaeFloat.zero()
         segno = '-' if valore < 0 else '+'
         valore = abs(valore)
-        
+    
         parte_intera = int(valore)
         if parte_intera == 0:
             intero_str = '∅'
         else:
             intero_str = NovaeInt.from_int(parte_intera).symbol
-        
-        # Prendi la parte frazionaria con precisione controllata
-        resto = valore - parte_intera
-        # Arrotonda a max_cifre decimali per evitare errori di floating point
-        resto = round(resto, max_cifre + 1)
-        
-        # Converti in intero (es. 0.9075 -> 9075)
-        fraz_int = int(round(resto * (10 ** max_cifre)))
-        
-        # Converti in cifre Novae
+    
+        # Ottieni la parte frazionaria come stringa decimale, senza errori di arrotondamento
+        # Usa round per evitare problemi di floating point
+        fraz_decimale = round(valore - parte_intera, max_cifre + 2)
+        # Converti in stringa con max_cifre+2 decimali
+        fraz_str_dec = f"{fraz_decimale:.{max_cifre+2}f}"[2:]  # Salta "0."
+        # Tronca a max_cifre
+        fraz_str_dec = fraz_str_dec[:max_cifre]
+    
+        # Converti ogni cifra decimale in cifra Novae
         fraz_str = ''
-        for _ in range(max_cifre):
-            cifra = fraz_int // (10 ** (max_cifre - 1))
-            cifra_novae = cifra - 1
+        for c in fraz_str_dec:
+            cifra_dec = int(c)
+            cifra_novae = cifra_dec - 1
             if cifra_novae < 0:
                 cifra_novae = 0
             fraz_str += str(cifra_novae)
-            fraz_int = (fraz_int % (10 ** (max_cifre - 1))) * 10
-        
-        # Rimuovi zeri finali in eccesso
+    
+        # Rimuovi zeri finali in eccesso (ma tieni almeno una cifra se presente)
         fraz_str = fraz_str.rstrip('0')
         return NovaeFloat(intero_str, fraz_str, segno)
 
