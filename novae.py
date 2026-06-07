@@ -269,25 +269,32 @@ class NovaeFloat:
             return NovaeFloat.zero()
         segno = '-' if valore < 0 else '+'
         valore = abs(valore)
+        
         parte_intera = int(valore)
         if parte_intera == 0:
             intero_str = '∅'
         else:
             intero_str = NovaeInt.from_int(parte_intera).symbol
+        
+        # Prendi la parte frazionaria con precisione controllata
         resto = valore - parte_intera
+        # Arrotonda a max_cifre decimali per evitare errori di floating point
+        resto = round(resto, max_cifre + 1)
+        
+        # Converti in intero (es. 0.9075 -> 9075)
+        fraz_int = int(round(resto * (10 ** max_cifre)))
+        
+        # Converti in cifre Novae
         fraz_str = ''
         for _ in range(max_cifre):
-            if resto < 1e-12:
-                break
-            resto *= 10
-            cifra = int(resto)
+            cifra = fraz_int // (10 ** (max_cifre - 1))
             cifra_novae = cifra - 1
             if cifra_novae < 0:
                 cifra_novae = 0
             fraz_str += str(cifra_novae)
-            resto -= cifra
-            if abs(resto) < 1e-12:
-                break
+            fraz_int = (fraz_int % (10 ** (max_cifre - 1))) * 10
+        
+        # Rimuovi zeri finali in eccesso
         fraz_str = fraz_str.rstrip('0')
         return NovaeFloat(intero_str, fraz_str, segno)
 
