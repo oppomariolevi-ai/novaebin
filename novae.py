@@ -231,7 +231,7 @@ class NovaeFloat:
         if intero == '': intero = '∅'
         self.intero = intero
         self.fraz = fraz
-        self.segno = segno
+        self.segno = segno  # '+' o '-'
 
     @staticmethod
     def zero():
@@ -387,6 +387,14 @@ class NovaeFloat:
         val_b = b._valore_assoluto_dec()
         val_diff = val_a - val_b
         return NovaeFloat.da_decimale(val_diff)
+
+    def __sub__(self, other):
+        """Sottrazione Novae: a - b = a + (-b)."""
+        if isinstance(other, NovaeFloat):
+            # Inverti il segno di other e somma
+            neg_other = NovaeFloat(other.intero, other.fraz, '-' if other.segno == '+' else '+')
+            return self + neg_other
+        return NotImplemented
 
     def __mul__(self, other):
         if self.is_zero() or other.is_zero():
