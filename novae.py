@@ -263,41 +263,41 @@ class NovaeFloat:
             val += (int(c) + 1) * (10 ** (-j - 1))
         return -val if self.segno == '-' else val
 
-@staticmethod
-def da_decimale(valore, max_cifre=10):
-    if valore < 0:
-        raise ValueError("Valori negativi non ancora supportati")
-    if abs(valore) < 1e-12:
-        return NovaeFloat.zero()
+   @staticmethod
+   def da_decimale(valore, max_cifre=10):
+       if valore < 0:
+           raise ValueError("Valori negativi non ancora supportati")
+       if abs(valore) < 1e-12:
+           return NovaeFloat.zero()
     
-    parte_intera = int(valore)
-    if parte_intera == 0:
+       parte_intera = int(valore)
+       if parte_intera == 0:
         intero_str = '∅'
-    else:
-        intero_str = NovaeInt.from_int(parte_intera).symbol
+       else:
+           intero_str = NovaeInt.from_int(parte_intera).symbol
     
-    resto = valore - parte_intera
-    fraz_str = ''
-    for i in range(max_cifre):
-        if resto < 1e-12:
-            break
-        resto *= 10
-        cifra = int(resto)
-        cifra_novae = cifra - 1
-        if cifra_novae < 0:
-            cifra_novae = 0
-        fraz_str += str(cifra_novae)
-        resto -= cifra
-        # Gestisce il caso in cui il resto diventa 0 esattamente
-        if abs(resto) < 1e-12:
-            break
+       resto = valore - parte_intera
+       fraz_str = ''
+       for i in range(max_cifre):
+           if resto < 1e-12:
+               break
+           resto *= 10
+           cifra = int(resto)
+           cifra_novae = cifra - 1
+           if cifra_novae < 0:
+               cifra_novae = 0
+           fraz_str += str(cifra_novae)
+           resto -= cifra
+           # Gestisce il caso in cui il resto diventa 0 esattamente
+           if abs(resto) < 1e-12:
+               break
     
-    # Rimuovi zeri finali in eccesso
-    fraz_str = fraz_str.rstrip('0')
-    if fraz_str == '':
-        fraz_str = '0'  # Mantiene almeno una cifra frazionaria per la rappresentazione
+       # Rimuovi zeri finali in eccesso
+       fraz_str = fraz_str.rstrip('0')
+       if fraz_str == '':
+           fraz_str = '0'  # Mantiene almeno una cifra frazionaria per la rappresentazione
 
-    return NovaeFloat(intero_str, fraz_str)
+       return NovaeFloat(intero_str, fraz_str)
 
     def _valore_assoluto_dec(self):
         """Restituisce il valore assoluto decimale (senza segno)."""
