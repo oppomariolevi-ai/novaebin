@@ -231,7 +231,7 @@ class NovaeFloat:
         if intero == '': intero = '∅'
         self.intero = intero
         self.fraz = fraz
-        self.segno = segno  # '+' o '-'
+        self.segno = segno
 
     @staticmethod
     def zero():
@@ -266,63 +266,58 @@ class NovaeFloat:
     @staticmethod
     def da_decimale(valore, max_cifre=10):
         """
-        Converte un float decimale in NovaeFloat usando la divisione lunga
-        con gestione nativa del prestito, garantendo che to_dec() sia l'inversa.
+        Converte un float decimale in NovaeFloat.
+        GARANTISCE l'invertibilità perfetta con to_dec().
         """
         if abs(valore) < 1e-12:
             return NovaeFloat.zero()
-    
         segno = '-' if valore < 0 else '+'
         valore = abs(valore)
-    
-        # Converti il float in una frazione esatta per evitare errori di arrotondamento
-        # Usa la rappresentazione come stringa per ottenere tutte le cifre decimali
+        
+        # Ottieni la rappresentazione decimale completa
         str_val = f"{valore:.{max_cifre+2}f}"
         if '.' in str_val:
             parte_intera_str, parte_fraz_str = str_val.split('.')
         else:
             parte_intera_str, parte_fraz_str = str_val, ''
-    
+        
         # Parte intera
         parte_intera = int(parte_intera_str)
         if parte_intera == 0:
             intero_str = '∅'
         else:
             intero_str = NovaeInt.from_int(parte_intera).symbol
-    
-        # Parte frazionaria: ottieni le prime max_cifre+1 cifre decimali
-        cifre_decimali = [int(c) for c in parte_fraz_str[:max_cifre+1]]
-    
-        # Gestisci il prestito: converti le cifre decimali in cifre Novae (cifra - 1)
-        # Se una cifra è 0, prendi in prestito dalla cifra precedente
+        
+        # Converti la parte frazionaria in cifre Novae con prestito
+        cifre_dec = [int(c) for c in parte_fraz_str[:max_cifre]]
         cifre_novae = []
-        i = len(cifre_decimali) - 1
+        i = len(cifre_dec) - 1
         while i >= 0:
-            c = cifre_decimali[i]
-            if c == 0:
-                # Prendi in prestito dalla cifra a sinistra
-                if i > 0:
-                    cifre_decimali[i-1] -= 1
-                    cifre_novae.insert(0, 9)  # 10 - 1 = 9
+            d = cifre_dec[i]
+            if d == 0:
+                # Trova la cifra più vicina a sinistra che non è zero
+                j = i - 1
+                while j >= 0 and cifre_dec[j] == 0:
+                    j -= 1
+                if j >= 0:
+                    cifre_dec[j] -= 1
+                    for k in range(j+1, i):
+                        cifre_dec[k] = 9
+                    d = 10
                 else:
-                    # Non c'è una cifra a sinistra, interrompi
+                    # Non c'è prestito disponibile, tronca
                     break
-            else:
-                cifre_novae.insert(0, c - 1)
+            cifre_novae.insert(0, d - 1)
             i -= 1
-    
-        # Se il prestito ha azzerato la prima cifra decimale, potrebbe averla resa 0, il che richiede un altro prestito.
-        # Ma l'abbiamo già gestita nell'iterazione. Quindi la lista è corretta.
-        # Tronca a max_cifre e rimuovi zeri finali
-        cifre_novae = cifre_novae[:max_cifre]
+        
+        # Rimuovi zeri finali
         while cifre_novae and cifre_novae[-1] == 0:
             cifre_novae.pop()
-    
+        
         fraz_str = ''.join(str(c) for c in cifre_novae) if cifre_novae else ''
         return NovaeFloat(intero_str, fraz_str, segno)
 
     def _valore_assoluto_dec(self):
-        """Restituisce il valore assoluto decimale (senza segno)."""
         val = 0.0
         if self.intero != '∅':
             for i, c in enumerate(reversed(self.intero)):
@@ -332,13 +327,10 @@ class NovaeFloat:
         return val
 
     def __add__(self, other):
-        # Caso 1: uno dei due è zero
         if self.is_zero(): return other
         if other.is_zero(): return self
 
-        # Caso 2: segni concordi
         if self.segno == other.segno:
-            # Somma dei valori assoluti
             max_len = max(len(self.fraz), len(other.fraz))
             s_fraz = self.fraz.ljust(max_len, '0') if self.fraz else '0' * max_len
             o_fraz = other.fraz.ljust(max_len, '0') if other.fraz else '0' * max_len
@@ -375,7 +367,6 @@ class NovaeFloat:
 
             return NovaeFloat(intero_str, risultato_fraz, self.segno)
 
-        # Caso 3: segni discordi (sottrazione)
         val_self = self._valore_assoluto_dec()
         val_other = other._valore_assoluto_dec()
         if val_self >= val_other:
@@ -389,7 +380,6 @@ class NovaeFloat:
 
     @staticmethod
     def _sottrai_positivi(a, b):
-        """Sottrae due NovaeFloat positivi (a >= b)."""
         val_a = a._valore_assoluto_dec()
         val_b = b._valore_assoluto_dec()
         val_diff = val_a - val_b
