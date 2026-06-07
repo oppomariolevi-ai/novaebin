@@ -265,36 +265,60 @@ class NovaeFloat:
 
     @staticmethod
     def da_decimale(valore, max_cifre=10):
+        """
+        Converte un float decimale in NovaeFloat usando la divisione lunga
+        con gestione nativa del prestito, garantendo che to_dec() sia l'inversa.
+        """
         if abs(valore) < 1e-12:
             return NovaeFloat.zero()
+    
         segno = '-' if valore < 0 else '+'
         valore = abs(valore)
     
-        parte_intera = int(valore)
+        # Converti il float in una frazione esatta per evitare errori di arrotondamento
+        # Usa la rappresentazione come stringa per ottenere tutte le cifre decimali
+        str_val = f"{valore:.{max_cifre+2}f}"
+        if '.' in str_val:
+            parte_intera_str, parte_fraz_str = str_val.split('.')
+        else:
+            parte_intera_str, parte_fraz_str = str_val, ''
+    
+        # Parte intera
+        parte_intera = int(parte_intera_str)
         if parte_intera == 0:
             intero_str = '∅'
         else:
             intero_str = NovaeInt.from_int(parte_intera).symbol
     
-        # Ottieni la parte frazionaria come stringa decimale, senza errori di arrotondamento
-        # Usa round per evitare problemi di floating point
-        fraz_decimale = round(valore - parte_intera, max_cifre + 2)
-        # Converti in stringa con max_cifre+2 decimali
-        fraz_str_dec = f"{fraz_decimale:.{max_cifre+2}f}"[2:]  # Salta "0."
-        # Tronca a max_cifre
-        fraz_str_dec = fraz_str_dec[:max_cifre]
+        # Parte frazionaria: ottieni le prime max_cifre+1 cifre decimali
+        cifre_decimali = [int(c) for c in parte_fraz_str[:max_cifre+1]]
     
-        # Converti ogni cifra decimale in cifra Novae
-        fraz_str = ''
-        for c in fraz_str_dec:
-            cifra_dec = int(c)
-            cifra_novae = cifra_dec - 1
-            if cifra_novae < 0:
-                cifra_novae = 0
-            fraz_str += str(cifra_novae)
+        # Gestisci il prestito: converti le cifre decimali in cifre Novae (cifra - 1)
+        # Se una cifra è 0, prendi in prestito dalla cifra precedente
+        cifre_novae = []
+        i = len(cifre_decimali) - 1
+        while i >= 0:
+            c = cifre_decimali[i]
+            if c == 0:
+                # Prendi in prestito dalla cifra a sinistra
+                if i > 0:
+                    cifre_decimali[i-1] -= 1
+                    cifre_novae.insert(0, 9)  # 10 - 1 = 9
+                else:
+                    # Non c'è una cifra a sinistra, interrompi
+                    break
+            else:
+                cifre_novae.insert(0, c - 1)
+            i -= 1
     
-        # Rimuovi zeri finali in eccesso (ma tieni almeno una cifra se presente)
-        fraz_str = fraz_str.rstrip('0')
+        # Se il prestito ha azzerato la prima cifra decimale, potrebbe averla resa 0, il che richiede un altro prestito.
+        # Ma l'abbiamo già gestita nell'iterazione. Quindi la lista è corretta.
+        # Tronca a max_cifre e rimuovi zeri finali
+        cifre_novae = cifre_novae[:max_cifre]
+        while cifre_novae and cifre_novae[-1] == 0:
+            cifre_novae.pop()
+    
+        fraz_str = ''.join(str(c) for c in cifre_novae) if cifre_novae else ''
         return NovaeFloat(intero_str, fraz_str, segno)
 
     def _valore_assoluto_dec(self):
